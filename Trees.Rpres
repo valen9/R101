@@ -1,0 +1,92 @@
+Algorithms for trees
+========================================================
+author: Fabien CHERANCE
+date: 2016.06.12
+autosize: true
+
+CART algorithm
+========================================================
+
+- by Breiman et al. (1984)
+- see rpart package
+- greedy
+
+Loading an example
+========================================================
+
+```{r}
+library(rpart)
+data(stagec)
+summary(stagec)
+```
+
+
+Where the variables are
+========================================================
+
+- pgtime: Time to progression or last follow-up (years)
+- pgstat: 1 = progression observed, 0 = censored
+- age: age in years
+- eet: early endocrine therapy, 1 = no, 2 = yes
+- g2: percent of cells in G2 phase, as found by flow cytometry
+- grade: grade of the tumor, Farrow system
+- gleason: grade of the tumor, Gleason system
+- ploidy : the ploidy status of the tumor, from flow cytometry. Values are diploid, tetraploid, and aneuploid
+
+
+Illustration with a survival tree
+========================================================
+
+```{r, echo=FALSE, fig.width=20, fig.height=12}
+library(rpart.plot)
+data(stagec)
+param <- rpart.control(minsplit=24,cp=0.02)
+rpart_fit <- rpart(survival::Surv(pgtime,pgstat)~.,stagec,method="exp",control=param)
+rpart.plot(rpart_fit,cex=4,compress=T, extra=1, border.col=0, digits=4)
+```
+
+- We add to the event (0/1) the information of time follow-up.
+- In this example, we increase the complexity parameter to prune the tree along construction
+
+
+Illustration with party
+========================================================
+
+```{r, echo=FALSE, fig.width=20, fig.height=12}
+library(party)
+param <- ctree_control(minsplit=24,mincriterion=.90)
+party_fit <- ctree(survival::Surv(pgtime,pgstat)~.,stagec, controls=param)
+plot(party_fit)
+
+```
+
+- We give ourselves a significance level of 10%
+- The split obtained is the same as for rpart
+
+The differences
+========================================================
+
+We are considering here two algorithms: CART and Conditional Inference
+
+1. __rpart__ will use any of 4 methods ("anova","poisson","class","exp").
+Though it can actually be adapted by providing an user defined splitting method.
+Provide the functions init, split and eval.
+2. __party__ is still recursive partitioning, with a conditional inference framework.
+
+  + Test global null hypothesis of independence between any input variable and the response
+  + Select input with strongest association measured by p-value for a single input variable and the response
+  + Implement the split
+  + Iterate first two steps for each node
+The intention is to bring statistical significance to a process that could well just be heuristic (as in rpart)
+
+The warnings
+========================================================
+
+In CART procedure variables with more possible splits will be more likely to be selected.
+It's a variable selection bias.
+
+
+```{r}
+
+```
+
